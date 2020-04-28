@@ -1,0 +1,68 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block scripts %}
+    {{ super() }}
+    {{ moment.include_moment() }}
+    {{ moment.lang(g.locale) }}
+
+    <script>
+        function translate(sourceElem, destElem, sourceLang, destLang) {
+            $(destElem).html('<img src="{{ url_for('static', filename='loading.gif') }}">');
+            $.post('/translate', {
+                text: $(sourceElem).text(),
+                source_language: sourceLang,
+                dest_language: destLang
+            }).done(function(response) {
+                $(destElem).text(response['text']['text'])
+            }).fail(function() {
+                console.log(response)
+
+                $(destElem).text("{{ _('Error: Could not contact server.') }}");
+            });
+        }
+    </script>
+{% endblock %}
+
+{% block title %}
+    {% if title %}{{ title }} - Microblog{% else %}Welcome to Microblog{% endif %}
+{% endblock %}
+
+{% block navbar %}
+    <nav class="navbar navbar-default">
+        <div>
+            {{_('Microblog:')}}
+            <a href="{{ url_for('main.index') }}">{{_('Home')}}</a>
+            {% if current_user.is_anonymous %}
+            <a href="{{ url_for('auth.login') }}">{{_('Login')}}</a>
+            {% else %}
+            <a href="{{ url_for('main.user', username=current_user.username) }}">{{_('Profile')}}</a>
+            <a href="{{ url_for('auth.logout') }}">{{_('Logout')}}</a>
+            <a href="{{ url_for('main.explore') }}">{{_('Explore')}}</a>
+            {% endif %}
+          </div>
+          {% if g.search_form %}
+          <form class="navbar-form navbar-left" method="get"
+                  action="{{ url_for('main.search') }}">
+              <div class="form-group">
+                  {{ g.search_form.q(size=20, class='form-control',
+                      placeholder=g.search_form.q.label.text) }}
+              </div>
+          </form>
+          {% endif %}
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-info" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {# содержимое приложения которое должно быть предоставлено в блоке app_content #}
+        {% block app_content %}{% endblock %}
+    </div>
+{% endblock %}
